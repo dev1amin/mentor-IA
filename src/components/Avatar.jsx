@@ -10,10 +10,10 @@ import { Lipsync, VISEMES } from "wawa-lipsync";
 const lipsyncManager = new Lipsync();
 
 // ===== DEBUG FLAGS =====
-const DEBUG_SHOW_BUTTON_DESKTOP = false;      // deixe true até validar no iPhone
-const DEBUG_ATTACH_NATIVE_CONTROLS = false;  // coloque true p/ ver o player nativo
+const DEBUG_SHOW_BUTTON_DESKTOP = false;      // true para testar o botão no desktop
+const DEBUG_ATTACH_NATIVE_CONTROLS = false;   // true para ver o player nativo
 
-// ===== Expressões mais suaves =====
+// ===== Expressões =====
 const facialExpressions = {
   default: { browInnerUp: 0.1, eyeSquintLeft: 0.22, eyeSquintRight: 0.24, noseSneerLeft: 0.08, noseSneerRight: 0.07, mouthPressLeft: 0.02, mouthPressRight: 0.02 },
   smile:   { browInnerUp: 0.12, eyeSquintLeft: 0.24, eyeSquintRight: 0.26, noseSneerLeft: 0.08, noseSneerRight: 0.07, mouthPressLeft: 0.02, mouthPressRight: 0.02 },
@@ -57,13 +57,26 @@ export function Avatar(props) {
   const audioRef = useRef(null);
   const connectedRef = useRef(false);
   const [animation, setAnimation] = useState("Idle");
-  const blobUrlRef = useRef(null); // p/ revogar blob antigo
+  const blobUrlRef = useRef(null);          // revogar blobs antigos
+  const lastHandledUuidRef = useRef(null);  // evita duplicar no StrictMode
+  const lastAppliedSrcRef = useRef("");     // evita reiniciar o mesmo áudio
 
-  // Converte data: para blob: (iOS se dá muito melhor assim)
+  // ===== bridge: ouve mensagens vindas do ChatDock (postMessage)
+  const [externalMsg, setExternalMsg] = useState(null);
+  useEffect(() => {
+    const onMsg = (ev) => {
+      if (ev?.data?.type === "avatarMessage" && ev.data.data) {
+        setExternalMsg(ev.data.data); // { uuid, text, audioUrl, avatar, ... }
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
+  // Converte data: para blob:
   const ensurePlayableSrc = async (src) => {
     if (!src || !src.startsWith("data:")) return src;
     try {
-      // normaliza mp3 -> mpeg
       if (src.startsWith("data:audio/mp3")) {
         src = src.replace("data:audio/mp3", "data:audio/mpeg");
       }
@@ -73,14 +86,11 @@ export function Avatar(props) {
       const buf = await blobRaw.arrayBuffer();
       const blob = new Blob([buf], { type: mime === "audio/mp3" ? "audio/mpeg" : mime });
       const url = URL.createObjectURL(blob);
-      // guarda p/ revogar no próximo áudio
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
       blobUrlRef.current = url;
-      console.log("[Avatar] data: -> blob: OK");
       return url;
-    } catch (e) {
-      console.warn("[Avatar] Falha ao converter data: para blob:", e);
-      return src; // fallback
+    } catch {
+      return src;
     }
   };
 
@@ -90,14 +100,10 @@ export function Avatar(props) {
       if (!Ctx) return;
       const ctx = lipsyncManager.audioContext || lipsyncManager.context || window.__wawaAudioCtx || new Ctx();
       window.__wawaAudioCtx = ctx;
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-        console.log("[Avatar] AudioContext resumed.");
-      }
+      if (ctx.state === "suspended") await ctx.resume();
     } catch {}
   };
 
-  // tenta ligar cadeia até o destino (se a lib expuser os nós)
   const tryConnectToDestination = () => {
     try {
       const ctx =
@@ -116,23 +122,11 @@ export function Avatar(props) {
         lipsyncManager._source ||
         null;
 
-      console.log("[Avatar] Lipsync internals:", {
-        ctxFound: !!ctx,
-        analyserFound: !!analyser,
-        sourceFound: !!source,
-      });
-
       if (ctx) {
-        if (analyser && analyser.connect) {
-          try { analyser.connect(ctx.destination); console.log("[Avatar] analyser -> destination OK"); } catch {}
-        }
-        if (source && source.connect) {
-          try { source.connect(ctx.destination); console.log("[Avatar] source -> destination OK"); } catch {}
-        }
+        if (analyser?.connect) { try { analyser.connect(ctx.destination); } catch {} }
+        if (source?.connect)   { try { source.connect(ctx.destination);   } catch {} }
       }
-    } catch (e) {
-      console.warn("[Avatar] tryConnectToDestination erro:", e);
-    }
+    } catch {}
   };
 
   const handleUserPlay = async () => {
@@ -140,7 +134,6 @@ export function Avatar(props) {
     if (!audio) return;
     try {
       await resumeAudioContextIfNeeded();
-      // iOS requer que a fonte esteja pronta
       if (audio.readyState < 3) {
         await new Promise((resolve, reject) => {
           const ok = () => { cleanup(); resolve(); };
@@ -156,12 +149,10 @@ export function Avatar(props) {
       }
       audio.muted = false;
       audio.volume = 1;
-      await audio.play();
-      console.log("[Avatar] handleUserPlay -> play OK");
+      if (audio.paused) await audio.play();  // evita replay
       setShowPlayButton(false);
       setAnimation("Talking_1");
-    } catch (err) {
-      console.warn("[Avatar] handleUserPlay -> play falhou:", err);
+    } catch {
       setShowPlayButton(true);
     }
   };
@@ -185,97 +176,94 @@ export function Avatar(props) {
     setFacialExpression("default");
   };
 
+  // ===== efeito principal: processa tanto message (hook) quanto externalMsg (ChatDock)
   useEffect(() => {
     (async () => {
-      if (!message) {
-        setAnimation("Idle");
-        return;
-      }
+      const payload = externalMsg || message; // prioridade ao que vem do ChatDock
+      if (!payload) { setAnimation("Idle"); return; }
+
+      // dedup por uuid (evita tocar 2x no StrictMode)
+      const uuid = payload.uuid || `${payload.text || payload.output || ""}`.slice(0, 64);
+      if (uuid && lastHandledUuidRef.current === uuid) return;
+      lastHandledUuidRef.current = uuid;
 
       if (playTimeoutRef.current) clearTimeout(playTimeoutRef.current);
-      setLoading(false);
+      setLoading?.(false);
       setButtonsDisabled?.(true);
 
-      setFacialExpression(message.facialExpression || "default");
+      setFacialExpression(payload.facialExpression || "default");
 
-      // cria <audio> uma vez e coloca no DOM (debug opcional)
+      // cria <audio> uma vez
       if (!audioRef.current) {
         const el = new Audio();
         el.preload = "auto";
         el.playsInline = true;
         el.muted = false;
         el.volume = 1;
+        el.loop = false;
         if (DEBUG_ATTACH_NATIVE_CONTROLS) el.controls = true;
         el.style.position = "fixed";
         el.style.left = DEBUG_ATTACH_NATIVE_CONTROLS ? "16px" : "-9999px";
         el.style.bottom = "16px";
         document.body.appendChild(el);
         audioRef.current = el;
-        console.log("[Avatar] <audio> criado/DOM.");
       }
 
       const audio = audioRef.current;
 
-      // prepara o src (corrige data: -> blob:)
-      let src = message.audio || message.audioUrl || "";
-      if (src.startsWith("data:audio/mp3")) {
-        src = src.replace("data:audio/mp3", "data:audio/mpeg");
+      // prepara src
+      let nextSrc = payload.audio || payload.audioUrl || "";
+      if (nextSrc.startsWith("data:audio/mp3")) {
+        nextSrc = nextSrc.replace("data:audio/mp3", "data:audio/mpeg");
       }
-      src = await ensurePlayableSrc(src);
-      audio.src = src;
-      try { audio.load(); } catch {}
+      nextSrc = await ensurePlayableSrc(nextSrc);
 
-      console.log("[Avatar] audio.src set:", src.slice(0, 64) + (src.length > 64 ? "..." : ""));
+      // só troca se mudou
+      if (lastAppliedSrcRef.current !== nextSrc) {
+        try { audio.pause(); } catch {}
+        audio.src = nextSrc || "";          // se vazio, ainda anima só com visemas nulos
+        lastAppliedSrcRef.current = nextSrc;
+        try { audio.load(); } catch {}
+      }
 
-      // conecta lipsync (uma vez) e tenta garantir saída
-      if (!connectedRef.current && src) {
+      // lipsync (uma única vez)
+      if (!connectedRef.current && nextSrc) {
         try {
           lipsyncManager.connectAudio(audio);
           connectedRef.current = true;
-          console.log("[Avatar] lipsyncManager.connectAudio OK.");
-        } catch (e) {
-          console.warn("[Avatar] connectAudio falhou (provável já conectado):", e);
-        }
+        } catch {}
       }
       tryConnectToDestination();
 
-      audio.onplay = () => {
-        console.log("[Avatar] onplay");
-        setAnimation(message.animation || "Talking_1");
-      };
+      audio.onplay = () => setAnimation(payload.animation || "Talking_1");
 
       audio.onended = () => {
-        console.log("[Avatar] onended");
         setAnimation("Idle");
         resetFacialExpressions();
         setButtonsDisabled?.(false);
-        setLoading(false);
-        onMessagePlayed();
+        setLoading?.(false);
+        onMessagePlayed?.();
       };
 
-      audio.onerror = (e) => {
-        console.warn("[Avatar] onerror no <audio>:", e);
+      audio.onerror = () => {
         setShowPlayButton(true);
         setButtonsDisabled?.(false);
-        setLoading(false);
+        setLoading?.(false);
       };
 
-      // — Mostra o botão no iOS (e no desktop p/ debug)
+      // autoplay (exceto iOS)
       if (isIOS() || DEBUG_SHOW_BUTTON_DESKTOP) {
         setShowPlayButton(true);
         playTimeoutRef.current = setTimeout(() => {
           setShowPlayButton(false);
           setButtonsDisabled?.(false);
-          setLoading(false);
+          setLoading?.(false);
         }, 120000);
       } else {
-        // autoplay nos demais
         try {
-          await audio.play();
-          console.log("[Avatar] autoplay OK");
+          if (audio.paused && nextSrc) await audio.play();
           setShowPlayButton(false);
-        } catch (err) {
-          console.warn("[Avatar] autoplay falhou:", err);
+        } catch {
           setShowPlayButton(true);
         }
       }
@@ -284,8 +272,9 @@ export function Avatar(props) {
     return () => {
       if (playTimeoutRef.current) clearTimeout(playTimeoutRef.current);
     };
-  }, [message, setButtonsDisabled, setLoading, onMessagePlayed]);
+  }, [externalMsg, message, setButtonsDisabled, setLoading, onMessagePlayed]);
 
+  // ===== animações do glTF
   const { animations } = useGLTF(animationsGLB);
   const group = useRef();
   const { actions, mixer } = useAnimations(animations, group);
@@ -293,12 +282,11 @@ export function Avatar(props) {
   useEffect(() => {
     const fallback = animations[0]?.name || "Idle";
     const target = actions[animation] || actions[fallback];
-    if (target) {
-      target.reset().fadeIn(mixer.stats?.actions?.inUse === 0 ? 0 : 0.5).play();
-    }
+    if (target) target.reset().fadeIn(mixer.stats?.actions?.inUse === 0 ? 0 : 0.5).play();
     return () => target && target.fadeOut(0.5);
   }, [animation, actions, animations, mixer]);
 
+  // ===== morph targets / visemas
   const lerpMorphTarget = (target, value, speed = 0.1) => {
     scene.traverse((child) => {
       if (child.isSkinnedMesh && child.morphTargetDictionary) {
@@ -357,6 +345,14 @@ export function Avatar(props) {
     winkRight: button(() => { setWinkRight(true); setTimeout(() => setWinkRight(false), 300); }),
     animation: { value: animation, options: [], onChange: (v) => setAnimation(v) },
   });
+
+  // cleanup blobs ao desmontar
+  useEffect(() => {
+    return () => {
+      try { audioRef.current?.pause(); } catch {}
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, []);
 
   return (
     <>
