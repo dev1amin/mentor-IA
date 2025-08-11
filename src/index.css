@@ -1,0 +1,349 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --leva-sizes-rootWidth: 340px;
+}
+
+html, body{
+  position: relative;
+}
+
+.overlay {
+  z-index: 10;
+  height: 53%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+canvas {
+  pointer-events: none;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+button.bg-\[\#2596be\].hover\:bg-\[\#227ea2\].text-white.p-4.px-10.font-semibold.uppercase.rounded-md{
+  background-color: #FAB201 !important;
+}
+
+button.bg-\[\#2596be\].hover\:bg-\[\#227ea2\].text-white.p-4.px-10.font-semibold.uppercase.rounded-md:hover{
+  background-color: #bb8708 !important;
+}
+
+input.w-full.placeholder\:text-gray-300.placeholder\:italic.p-4.rounded-md.bg-black.bg-opacity-40.text-gray-200.text-sm.backdrop-blur-md.border-2.focus\:outline-none.focus\:ring-0.focus\:border-gray-500{
+  border-color: #FAB201 !important;
+}
+
+.play-button-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.play-button {
+  background-color: white;
+  border: none;
+  color: white;
+  font-size: 24px;
+  padding: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+div{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.botao-ios{
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 999999 !important;
+  transform: translate(-210px, -200px) !important;
+}
+
+div span{
+  margin-left: -94px;
+}
+
+.play-button-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.play-button {
+  background-color: white;
+  border: none;
+  color: white;
+  font-size: 24px;
+  padding: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+body {
+  margin: 0;
+  background-color: #FAB201;
+  background-image: linear-gradient(190deg, #FAB201 0%, #000000 110%);
+}
+
+body.greenScreen {
+  background-color: #00ff00;
+  background-image: none;
+}
+
+.avatar-selection {
+  display: flex;
+  justify-content: space-around;
+}
+
+.avatar-selection button {
+  background: #0cc0df;
+  color: white;
+  padding: 1rem 2rem;
+  margin: 0 1rem;
+  border: 2px solid #ff9a00;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease-in-out, background 0.3s ease-in-out;
+  font-family: 'Press Start 2P', cursive; /* Estilo de fonte pixelado */
+  width: 90%;
+}
+
+.avatar-selection button:hover {
+  transform: scale(1.1);
+  background: #ff9a00;
+}
+
+.selected-avatar {
+  background: #ff9a00;
+  border: 2px solid #0cc0df;
+  color: white;
+}
+
+h2 {
+  font-family: 'Press Start 2P', cursive; /* Estilo de fonte pixelado */
+  color: #0cc0df;
+}
+
+.bg-white {
+  background-color: #000000;
+  color: #ff9a00;
+  border: 2px solid #0cc0df;
+}
+
+.fixed {
+  font-family: 'Press Start 2P', cursive; /* Estilo de fonte pixelado */
+}
+
+.avatar-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 10px;
+}
+
+/* Estilo da barra de rolagem para navegadores Webkit (Chrome, Safari) */
+.init::-webkit-scrollbar {
+  width: 6px; /* Largura da barra de rolagem semelhante à da imagem */
+}
+
+.init::-webkit-scrollbar-thumb {
+  background-color: #4D4D4D; /* Cor cinza escuro semelhante à da imagem */
+  border-radius: 10px; /* Bordas arredondadas */
+}
+
+.init::-webkit-scrollbar-track {
+  background-color: #2E2E2E; /* Cor do fundo da barra de rolagem */
+}
+
+/* Estilo da barra de rolagem para o Firefox */
+body {
+  scrollbar-width: thin; /* Largura da barra de rolagem fina */
+  scrollbar-color: #4D4D4D #2E2E2E; /* Cor da barra de rolagem e do fundo */
+}
+
+.avatar-image {
+  width: 90%;
+  height: 370px;
+  margin-bottom: 10px;
+  border-radius: 30px;
+}
+
+.init{
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: block !important;
+}
+
+*{
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif !important;
+}
+
+#heading h1{
+  line-height: 0.8;
+  font-size: 24px;
+  margin-bottom: 10px;
+  font-weight: 700;
+  color: white;
+}
+
+#heading{
+  width: 100%;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.highlight{
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: #ffcc00;
+  font-size: 1.9rem;
+  margin: 0 !important;
+}
+
+.avatar-selection-container {
+  background-image: url('https://i.imgur.com/MZUzERk.png');
+  background-size: cover;
+  background-position: center;
+  width: 100%;
+  height: 100vh;
+}
+
+.avatar-selection {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.avatar-option img {
+  width: 100%;
+  max-width: 300px;
+  border-radius: 10px;
+  transition: transform 0.3s ease;
+}
+
+.avatar-option img:hover {
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .avatar-selection {
+    flex-direction: column;
+  }
+
+  .avatar-option img {
+    max-width: 100%;
+    border: 1px solid #D79901;
+    border-radius: 12px;
+  }
+
+  #carol-avatar {
+    content: url('https://i.imgur.com/3qkMEAT.png');
+  }
+
+  #david-avatar {
+    content: url('https://i.imgur.com/cNZWbhZ.png');
+  }
+
+  #ryan-avatar {
+    content: url('https://i.imgur.com/ywwWlyl.png');
+  }
+
+  .avatar-image{
+    height: 100%;
+  }
+}
+
+h2 {
+  text-align: center;
+  color: white;
+}
+
+.message-input-container {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: center;
+}
+
+.input-box {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(5px);
+  border-color: rgb(37, 150, 190);
+  flex-grow: 1;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
+.send-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.record-button {
+  border-radius: 50%;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s;
+}
+
+.record-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+
+@media (max-width: 768px) {
+  .message-input-container {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .input-box {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+
+  .send-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .record-button {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .record-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
