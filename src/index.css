@@ -21,7 +21,7 @@ input.w-full.placeholder\:text-gray-300.placeholder\:italic.p-4.rounded-md.bg-bl
 .play-button-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; }
 .play-button { background-color: white; border: none; color: white; font-size: 24px; padding: 20px; border-radius: 50%; cursor: pointer; transition: background-color 0.3s ease; }
 
-.botao-ios{ width: 100% !important; height: 100% !important; z-index: 999999 !important; transform: translate(-210px, -200px) !important; }
+.botao-ios { transform: none !important; }
 
 body { margin: 0; background-color: #FAB201; background-image: linear-gradient(190deg, #FAB201 0%, #000000 110%); }
 body.greenScreen { background-color: #00ff00; background-image: none; }
@@ -143,7 +143,7 @@ h2 { text-align: center; color: white; }
   background: transparent; z-index:12;
 }
 
-.chat-surface{ width:100%; max-width:980px; height:100%; display:flex; }
+.chat-surface{ width:100%; max-width:100%; height:100%; display:flex; }
 .chat-window{
   height:100%; width:100%; display:flex; flex-direction:column; gap:10px;
   background: black;
@@ -197,10 +197,10 @@ h2 { text-align: center; color: white; }
 /* ===== Digitando (3 bolinhas com pulinho) ===== */
 .bubble-typing{
   display:inline-flex; align-items:center; justify-content:space-between;
-  width:56px; padding:13px 10px;
+  width:46px; padding:13px 10px;
   background:#1A1A1A; color:#fff;
   border-radius:25px 25px 25px 3px !important;
-  gap:6px;
+  gap:3px;
 }
 .bubble-typing .dot{
   width:6px; height:6px; border-radius:50%; background:#fff; opacity:.85;

@@ -1,50 +1,42 @@
-// App.jsx
+// src/App.jsx
 import { Loader } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Leva } from "leva";
+import { useEffect, useState } from "react";
 import { Experience } from "./components/Experience";
-import { UI } from "./components/UI";
-import { useState } from "react";
-import ChatDock from "./components/ChatDock";
+import ChatDock from "./components/ChatDock"; // ✅ default import
 
 function App() {
-  const [isAvatarSelected, setIsAvatarSelected] = useState(
-    localStorage.getItem("isAvatarSelected") === "true"
-  );
+  const [isAvatarSelected, setIsAvatarSelected] = useState(true);
 
-  // Renderiza a tela de seleção apenas antes de escolher o avatar.
-  if (!isAvatarSelected) {
-    return (
-      <>
-        <Loader className="loader" />
-        <Leva hidden />
-        <UI
-          isAvatarSelected={isAvatarSelected}
-          setIsAvatarSelected={setIsAvatarSelected}
-        />
-      </>
-    );
-  }
+  // Garante defaults em produção/preview (storage limpo)
+  useEffect(() => {
+    if (!localStorage.getItem("selectedAvatar")) {
+      localStorage.setItem("selectedAvatar", "carol"); // fallback seguro
+    }
+    if (localStorage.getItem("isAvatarSelected") !== "true") {
+      localStorage.setItem("isAvatarSelected", "true");
+    }
+    setIsAvatarSelected(true);
+  }, []);
 
-  // Depois de escolher o avatar: layout 50/50 (Canvas em cima, Chat embaixo)
   return (
     <>
       <Loader className="loader" />
       <Leva hidden />
 
-      <div className="split-root">
-        {/* metade de cima: Avatar/Canvas */}
+      <div className="mentor-root">
         <div className="stage">
           <Canvas className="stage-canvas" shadows camera={{ position: [0, 0, 1], fov: 30 }}>
             <Experience />
           </Canvas>
+          {/* fade entre stage e chat (se você já tem .stage-fade no CSS, mantém) */}
+          <div className="stage-fade" />
         </div>
 
-        {/* metade de baixo: Chat (um único) */}
-        <div className="chat-half">
-          <div className="chat-dock">
-            <ChatDock />
-          </div>
+        <div className="dock">
+          {/* ChatDock não depende de isAvatarSelected; deixa sempre montado */}
+          <ChatDock />
         </div>
       </div>
     </>
